@@ -1,4 +1,4 @@
 streamlit
 pandas
 plotly
-https://docs.google.com/spreadsheets/d/1xWKtWzS1qpVxGMTiGyfaYoWGck8QjvFHE4fLznrrja4/edit?usp=sharing
+st-gsheets-connection
