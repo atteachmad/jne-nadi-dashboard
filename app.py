@@ -186,7 +186,7 @@ if check_password():
         # D. TABEL DATA MENTAH
         # ----------------------------------------
         st.subheader("📋 Detail Data Mentah Ulasan")
-        st.dataframe(df[["Nama_Agen", "Alamat", "Rating_Ulasan_Orang", "Sentimen", "Teks_Ulasan"]], use_container_width=True)
+        st.dataframe(df[["Nama_Agen", "Rating_Rata_Rata", "Rating_Ulasan_Orang", "Teks_Ulasan"]], use_container_width=True)
         
     except Exception as e:
         st.error(f"Gagal memuat data dari Google Sheets. Pastikan format kolom sama persis. Detail error: {e}")
