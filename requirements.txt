@@ -1,1 +1,3 @@
-# jne-nadi-dashboard
+streamlit
+pandas
+plotly
