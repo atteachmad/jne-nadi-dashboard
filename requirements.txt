@@ -2,3 +2,7 @@ streamlit
 pandas
 plotly
 st-gsheets-connection
+wordcloud
+matplotlib
+folium
+streamlit-folium
