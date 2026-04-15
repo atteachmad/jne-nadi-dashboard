@@ -8,10 +8,11 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import folium
 from streamlit_folium import st_folium
+import os
 # ==========================================
 # 1. KONFIGURASI HALAMAN DASAR
 # ==========================================
-st.set_page_config(page_title="NADI - JNE Agent Monitoring", page_icon="📦", layout="wide")
+st.set_page_config(page_title="NADI - JNE Agent Monitoring", page_icon="📦", layout="wide", initial_sidebar_state="collapsed")
 # ==========================================
 # 2. SISTEM LOGIN SEDERHANA
 # ==========================================
