@@ -10,6 +10,90 @@ import folium
 from streamlit_folium import st_folium
 
 # ==========================================
+
+# 1. KONFIGURASI HALAMAN DASAR
+
+# ==========================================
+
+st.set_page_config(page_title="NADI - JNE Agent Monitoring", page_icon="📦", layout="wide")
+
+
+
+# ==========================================
+
+# 2. SISTEM LOGIN SEDERHANA
+
+# ==========================================
+
+def check_password():
+
+    """Mengembalikan True jika password benar."""
+
+    def password_entered():
+
+        if (st.session_state["username"] == st.secrets["credentials"]["username"] and 
+
+            st.session_state["password"] == st.secrets["credentials"]["password"]):
+
+            st.session_state["password_correct"] = True
+
+            del st.session_state["password"]
+
+            del st.session_state["username"]
+
+        else:
+
+            st.session_state["password_correct"] = False
+
+
+
+    if "password_correct" not in st.session_state:
+
+        st.markdown("<h1 style='text-align: center;'>📦 NADI Login Portal</h1>", unsafe_allow_html=True)
+
+        st.markdown("<p style='text-align: center;'>JNE Agent Rating & Sentiment Analysis</p>", unsafe_allow_html=True)
+
+        
+
+        col1, col2, col3 = st.columns([1, 2, 1])
+
+        with col2:
+
+            st.text_input("Username", key="username")
+
+            st.text_input("Password", type="password", key="password")
+
+            st.button("Login", on_click=password_entered, use_container_width=True)
+
+        return False
+
+    
+
+    elif not st.session_state["password_correct"]:
+
+        st.markdown("<h1 style='text-align: center;'>📦 NADI Login Portal</h1>", unsafe_allow_html=True)
+
+        col1, col2, col3 = st.columns([1, 2, 1])
+
+        with col2:
+
+            st.text_input("Username", key="username")
+
+            st.text_input("Password", type="password", key="password")
+
+            st.button("Login", on_click=password_entered, use_container_width=True)
+
+            st.error("😕 Username atau password salah")
+
+        return False
+
+    
+
+    else:
+
+        return True
+
+# ==========================================
 # 1. KONFIGURASI HALAMAN DASAR (16:9 1366x768)
 # ==========================================
 st.set_page_config(page_title="NADI - JNE Agent Monitoring", page_icon="📦", layout="wide", initial_sidebar_state="collapsed")
