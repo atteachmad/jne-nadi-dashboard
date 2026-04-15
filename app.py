@@ -94,12 +94,12 @@ def check_password():
         return True
 
 # ==========================================
-# 1. KONFIGURASI HALAMAN DASAR (16:9 1366x768)
+# 3. KONFIGURASI HALAMAN DASAR (16:9 1366x768)
 # ==========================================
 st.set_page_config(page_title="NADI - JNE Agent Monitoring", page_icon="📦", layout="wide", initial_sidebar_state="collapsed")
 
 # ==========================================
-# 2. CUSTOM CSS UNTUK TAMPILAN "POWER BI"
+# 4. CUSTOM CSS UNTUK TAMPILAN "POWER BI"
 # ==========================================
 st.markdown("""
 <style>
@@ -146,7 +146,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. SISTEM LOGIN SEDERHANA
+# 5. SISTEM LOGIN SEDERHANA
 # ==========================================
 def check_password():
     # Gunakan logika login Anda di sini (saya asumsikan selalu True untuk testing tampilan)
@@ -154,7 +154,7 @@ def check_password():
     return True 
 
 # ==========================================
-# 4. FUNGSI BANTUAN (LOGIC & ANALISIS TEKS)
+# 6. FUNGSI BANTUAN (LOGIC & ANALISIS TEKS)
 # ==========================================
 KATA_ABAIKAN = {"yang", "di", "ke", "dari", "pada", "dalam", "untuk", "dengan", "dan", 
                 "atau", "ini", "itu", "juga", "sudah", "saya", "kami", "paket", "jne", 
@@ -168,7 +168,7 @@ def ekstrak_kata_penting(teks):
     return [k for k in teks.split() if k not in KATA_ABAIKAN and len(k) > 2]
 
 # ==========================================
-# 5. DASHBOARD UTAMA (LAYOUT POWER BI)
+# 7. DASHBOARD UTAMA (LAYOUT POWER BI)
 # ==========================================
 if check_password():
     
