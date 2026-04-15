@@ -242,4 +242,33 @@ if check_password():
             fig_bar.update_layout(
                 plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
                 margin=dict(l=0, r=40, t=10, b=0), xaxis_title=None, yaxis_title=None, height=220,
-                xaxis=dict(showgrid=False, showticklabels=False), font
+                xaxis=dict(showgrid=False, showticklabels=False), font=dict(family="Segoe UI", size=13)
+            )
+            st.plotly_chart(fig_bar, use_container_width=True)
+            
+            st.markdown("<div class='metric-label' style='margin-top:20px; margin-bottom:10px;'>SENTIMEN ULASAN PELANGGAN</div>", unsafe_allow_html=True)
+            
+            kolom_teks = next((c for c in df.columns if "teks" in c.lower() or "ulasan" in c.lower() and c != kolom_total_ulasan), None)
+            
+            if kolom_teks and not df_filtered[kolom_teks].dropna().empty:
+                semua_kata = []
+                for ulasan in df_filtered[kolom_teks].dropna():
+                    semua_kata.extend(ekstrak_kata_penting(ulasan))
+                    
+                if semua_kata:
+                    wordcloud = WordCloud(
+                        width=600, height=350, background_color="#f4f7f6", colormap="Set1", max_words=100
+                    ).generate(" ".join(semua_kata))
+                    
+                    fig_wc, ax = plt.subplots(figsize=(6, 3.5))
+                    ax.imshow(wordcloud, interpolation='bilinear')
+                    ax.axis("off")
+                    fig_wc.patch.set_facecolor('#f4f7f6')
+                    st.pyplot(fig_wc)
+                else:
+                    st.info("Kata ulasan terlalu pendek untuk dianalisis.")
+            else:
+                st.info("Tidak ada teks ulasan untuk ditampilkan.")
+
+    except Exception as e:
+        st.error(f"Gagal memuat data. Pastikan format kolom Spreadsheet benar. Error: {e}")
