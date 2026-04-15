@@ -3,7 +3,6 @@ import pandas as pd
 import plotly.express as px
 from streamlit_gsheets import GSheetsConnection
 import re
-from collections import Counter
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import folium
@@ -11,132 +10,100 @@ from streamlit_folium import st_folium
 import os
 
 # ==========================================
-
 # 1. KONFIGURASI HALAMAN DASAR
-
 # ==========================================
-
 st.set_page_config(page_title="NADI - JNE Agent Monitoring", page_icon="📦", layout="wide")
 
-
-
 # ==========================================
-
 # 2. SISTEM LOGIN SEDERHANA
-
 # ==========================================
-
 def check_password():
-
     """Mengembalikan True jika password benar."""
-
     def password_entered():
-
         if (st.session_state["username"] == st.secrets["credentials"]["username"] and 
-
             st.session_state["password"] == st.secrets["credentials"]["password"]):
-
             st.session_state["password_correct"] = True
-
             del st.session_state["password"]
-
             del st.session_state["username"]
-
         else:
-
             st.session_state["password_correct"] = False
 
-
-
     if "password_correct" not in st.session_state:
-
-        st.markdown("<h1 style='text-align: center;'>📦 NADI Login Portal</h1>", unsafe_allow_html=True)
-
-        st.markdown("<p style='text-align: center;'>JNE Agent Rating & Sentiment Analysis</p>", unsafe_allow_html=True)
-
+        st.markdown("<h1 style='text-align: center; color: #0033a0;'>📦 NADI Login Portal</h1>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: #555;'>JNE Agent Rating & Sentiment Analysis</p>", unsafe_allow_html=True)
         
-
         col1, col2, col3 = st.columns([1, 2, 1])
-
         with col2:
-
             st.text_input("Username", key="username")
-
             st.text_input("Password", type="password", key="password")
-
             st.button("Login", on_click=password_entered, use_container_width=True)
-
         return False
-
     
-
     elif not st.session_state["password_correct"]:
-
-        st.markdown("<h1 style='text-align: center;'>📦 NADI Login Portal</h1>", unsafe_allow_html=True)
-
+        st.markdown("<h1 style='text-align: center; color: #0033a0;'>📦 NADI Login Portal</h1>", unsafe_allow_html=True)
         col1, col2, col3 = st.columns([1, 2, 1])
-
         with col2:
-
             st.text_input("Username", key="username")
-
             st.text_input("Password", type="password", key="password")
-
             st.button("Login", on_click=password_entered, use_container_width=True)
-
             st.error("😕 Username atau password salah")
-
         return False
-
-    
-
     else:
-
         return True
 
 # ==========================================
-# 4. FUNGSI BANTUAN (ANALISIS TEKS)
+# 3. FUNGSI BANTUAN & CSS CUSTOM
 # ==========================================
 st.markdown("""
 <style>
-    /* Latar belakang abu-abu terang ala Power BI */
+    /* Global Background */
     .stApp {
-        background-color: #f0f2f6;
+        background-color: #f4f7f6;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     
-    /* Efek Card putih dengan shadow untuk setiap visual */
-    .css-1r6slb0, .css-12oz5g7 {
+    /* Efek Card Modern */
+    .metric-card {
         background-color: white;
-        border-radius: 10px;
-        padding: 15px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        margin-bottom: 15px;
-    }
-    
-    /* Header Container */
-    .header-container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background-color: white;
-        padding: 10px 20px;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         margin-bottom: 20px;
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        text-align: center;
+        border-top: 4px solid #0033a0;
     }
     
-    /* Metrik besar */
-    .big-metric {
-        font-size: 48px;
-        font-weight: bold;
-        text-align: center;
-        color: #333;
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
     }
+    
+    .big-metric {
+        font-size: 42px;
+        font-weight: 800;
+        color: #333;
+        margin: 10px 0;
+    }
+    
     .metric-label {
-        font-size: 18px;
-        text-align: center;
-        font-weight: bold;
-        color: #555;
+        font-size: 14px;
+        font-weight: 700;
+        color: #888;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+    
+    /* Tombol Kustom */
+    .stButton>button {
+        background-color: #0033a0 !important;
+        color: white !important;
+        border-radius: 8px !important;
+        font-weight: bold !important;
+        border: none !important;
+    }
+    .stButton>button:hover {
+        background-color: #ed1c24 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -153,7 +120,7 @@ def ekstrak_kata_penting(teks):
     return [k for k in teks.split() if k not in KATA_ABAIKAN and len(k) > 2]
 
 # ==========================================
-# 5. TAMPILAN DASHBOARD UTAMA
+# 4. TAMPILAN DASHBOARD UTAMA
 # ==========================================
 if check_password():
     
@@ -163,14 +130,14 @@ if check_password():
         if os.path.exists("logo_jne.png"):
             st.image("logo_jne.png", width=120)
         else:
-            st.markdown("<h2 style='color:#0033a0; margin:0;'><b>JNE</b></h2>", unsafe_allow_html=True)
+            st.markdown("<h2 style='color:#0033a0; margin:0; font-weight:900;'>JNE</h2>", unsafe_allow_html=True)
 
     with col_title:
-        st.markdown("<h3 style='margin:0; padding-top:10px;'>JNE Bandung : Analisa Kualitas Layanan & Sentimen</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='margin:0; padding-top:5px; color:#333;'>Dashboard Analisis Kualitas & Sentimen</h3>", unsafe_allow_html=True)
     with col_filter:
         global_filter = st.selectbox("Wilayah", ["Semua", "Bandung Kota", "Kabupaten Bandung", "Cimahi"], label_visibility="collapsed")
     with col_btn:
-        st.button("CEK MAPS", use_container_width=True)
+        st.button("🔄 REFRESH DATA", use_container_width=True)
 
     st.divider()
 
@@ -186,7 +153,7 @@ if check_password():
         kolom_kategori = "Kategori Warehouse" if "Kategori Warehouse" in df.columns else "Kategori"
         kolom_link = "link_maps" if "link_maps" in df.columns else "Link_Maps"
 
-        # Memperbaiki Format Angka (Koma ke Titik) sebelum dikonversi
+        # Memperbaiki Format Angka
         df[kolom_rating] = df[kolom_rating].astype(str).str.replace(',', '.').str.strip()
         df[kolom_rating] = pd.to_numeric(df[kolom_rating], errors="coerce").fillna(0)
         
@@ -203,27 +170,21 @@ if check_password():
         if kolom_kategori not in df.columns:
             df[kolom_kategori] = "AGEN" # Fallback
 
-        # State Management Slicer
         if "selected_kategori" not in st.session_state:
             st.session_state.selected_kategori = "Semua"
             
         # -- LAYOUT 3 KOLOM --
-        col1, col2, col3 = st.columns([1.2, 1.5, 1.3])
+        col1, col2, col3 = st.columns([1.2, 1.6, 1.2])
         
         # ================= KOLOM KIRI =================
         with col1:
-            st.markdown("<div class='metric-label'>KATEGORI WAREHOUSE</div>", unsafe_allow_html=True)
+            st.markdown("<div class='metric-label' style='margin-bottom:10px;'>KATEGORI WAREHOUSE</div>", unsafe_allow_html=True)
             kategori_options = ["Semua"] + list(df[kolom_kategori].dropna().unique())
             selected_kat = st.radio("", kategori_options, horizontal=True, label_visibility="collapsed")
             st.session_state.selected_kategori = selected_kat
             
-            # Filter Data sesuai klik Slicer
-            if st.session_state.selected_kategori != "Semua":
-                df_filtered = df[df[kolom_kategori] == st.session_state.selected_kategori]
-            else:
-                df_filtered = df
+            df_filtered = df[df[kolom_kategori] == st.session_state.selected_kategori] if st.session_state.selected_kategori != "Semua" else df
                 
-            # -- LOGIKA TABEL SESUAI SPREADSHEET (MENGHINDARI DUPLIKASI) --
             if kolom_total_ulasan in df.columns:
                 df_tabel = df_filtered.groupby("Nama_Agen").agg({
                     kolom_rating: "max", 
@@ -232,102 +193,108 @@ if check_password():
             else:
                 df_tabel = df_filtered.groupby("Nama_Agen").agg({kolom_rating: "max"}).reset_index()
             
-            # Mengurutkan Tabel & Format Koma
-            df_tabel = df_tabel.sort_values(by=kolom_rating, ascending=True)
+            df_tabel = df_tabel.sort_values(by=kolom_rating, ascending=False) # Lebih baik dari rating tertinggi
             df_tabel_display = df_tabel.copy()
             df_tabel_display[kolom_rating] = df_tabel_display[kolom_rating].apply(lambda x: f"{x:.1f}".replace(".", ","))
             if kolom_total_ulasan in df_tabel_display.columns:
                 df_tabel_display[kolom_total_ulasan] = df_tabel_display[kolom_total_ulasan].apply(lambda x: f"{x:,.0f}".replace(",", "."))
             
-            # -- LOGIKA DAX: KPI RATING --
-            # Format: "⭐ "  & SUBSTITUTE(FORMAT([Avg_Rating_Per_Agen], "0.0"), ".", ",")
             rata_rating = df_tabel[kolom_rating].mean()
             rating_text = f"{rata_rating:.1f}".replace(".", ",")
             
             st.markdown(f"""
-                <div class='css-1r6slb0' style='text-align:center;'>
-                    <span style='font-size: 50px; color:#FFD700;'>⭐</span>
-                    <span class='big-metric'>{rating_text}</span>
+                <div class='metric-card'>
+                    <div class='metric-label'>Rata-rata Rating</div>
+                    <div class='big-metric'><span style='color:#FFD700;'>⭐</span> {rating_text}</div>
                 </div>
             """, unsafe_allow_html=True)
             
-            # Tampilkan Tabel
-            st.dataframe(df_tabel_display, hide_index=True, use_container_width=True, height=400)
+            st.dataframe(df_tabel_display, hide_index=True, use_container_width=True, height=450)
 
         # ================= KOLOM TENGAH =================
         with col2:
-            st.markdown("<div class='metric-label'>TOTAL ULASAN</div>", unsafe_allow_html=True)
-            
-            # -- LOGIKA DAX: TOTAL ULASAN --
-            # SUMX(VALUES('BI FM'[Nama_Agen]), CALCULATE(MAX('BI FM'[Total_Ulasan_Agen])))
             if kolom_total_ulasan in df.columns:
                 total_ulasan = df_tabel[kolom_total_ulasan].sum()
             else:
                 total_ulasan = len(df_filtered)
             
-            # Format "#,##0" versi Indonesia (titik sebagai pemisah ribuan)
             ulasan_text = f"{total_ulasan:,.0f}".replace(",", ".")
             
             st.markdown(f"""
-                <div class='css-1r6slb0' style='text-align:center;'>
-                    <span style='font-size: 40px;'>🗣️</span>
-                    <span class='big-metric'>{ulasan_text}</span>
+                <div class='metric-card' style='border-top: 4px solid #ed1c24;'>
+                    <div class='metric-label'>Total Ulasan Pelanggan</div>
+                    <div class='big-metric'>🗣️ {ulasan_text}</div>
                 </div>
             """, unsafe_allow_html=True)
             
-            st.markdown("<div class='metric-label'>PETA LOKASI</div>", unsafe_allow_html=True)
+            st.markdown("<div class='metric-label' style='margin-bottom:10px;'>PETA LOKASI AGEN</div>", unsafe_allow_html=True)
             
-            # -- PETA MAPS INTERAKTIF --
-            m = folium.Map(location=[-6.917464, 107.619123], zoom_start=11)
-            
+            # -- PETA MAPS INTERAKTIF YG SUDAH DIPERBAIKI --
+            # Menggunakan tema CartoDB positron agar terlihat modern & bersih
+            m = folium.Map(location=[-6.917464, 107.619123], zoom_start=12, tiles="CartoDB positron")
             df_map_unik = df_filtered.drop_duplicates(subset=["Nama_Agen"]).copy()
             
             for idx, row in df_map_unik.iterrows():
                 if pd.notna(row["Latitude"]) and pd.notna(row["Longitude"]):
-                    # Mengambil URL Maps dari Database
-                    url_maps = row.get(kolom_link, f"https://www.google.com/maps/search/?api=1&query={row['Latitude']},{row['Longitude']}")
                     
+                    # Logika fallback URL Google Maps yang akurat
+                    if kolom_link in df.columns and pd.notna(row[kolom_link]) and str(row[kolom_link]).strip():
+                        url_maps = str(row[kolom_link])
+                    else:
+                        url_maps = f"https://www.google.com/maps/search/?api=1&query={row['Latitude']},{row['Longitude']}"
+                    
+                    # HTML Card Interaktif untuk di dalam Popup Peta
                     popup_html = f"""
-                    <div style="font-family: Arial; min-width: 150px;">
-                        <b>{row['Nama_Agen']}</b><br>
-                        Rating: {str(row.get(kolom_rating, 0)).replace('.', ',')}<br>
-                        <a href="{url_maps}" target="_blank" style="display:inline-block; margin-top:8px; padding:6px 12px; background-color:#0033a0; color:white; text-decoration:none; border-radius:4px; font-weight:bold;">
-                            Buka di Google Maps ↗
+                    <div style="font-family: 'Segoe UI', sans-serif; min-width: 220px; padding: 5px; text-align: center;">
+                        <h4 style="color: #0033a0; margin: 0 0 10px 0; font-size:16px;">{row['Nama_Agen']}</h4>
+                        <div style="font-size: 20px; font-weight: bold; margin-bottom: 15px;">
+                            <span style="color: #FFD700;">⭐</span> {str(row.get(kolom_rating, 0)).replace('.', ',')}
+                        </div>
+                        <a href="{url_maps}" target="_blank" style="display: block; width: 100%; padding: 10px 0; background-color: #ed1c24; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px;">
+                            📍 BUKA DI GOOGLE MAPS
                         </a>
                     </div>
                     """
+                    
                     folium.CircleMarker(
                         location=[row["Latitude"], row["Longitude"]],
-                        radius=7,
-                        color="#0033a0", # Biru Gelap JNE
-                        fill=True, fill_color="#ed1c24", # Merah JNE
-                        fill_opacity=0.9,
+                        radius=8,
+                        color="white", # Outline putih
+                        weight=2,
+                        fill=True, 
+                        fill_color="#0033a0", # Biru JNE
+                        fill_opacity=1.0,
                         popup=folium.Popup(popup_html, max_width=300),
-                        tooltip=row["Nama_Agen"]
+                        tooltip=f"Klik untuk detail: {row['Nama_Agen']}"
                     ).add_to(m)
             
-            st_folium(m, width=500, height=400, returned_objects=[])
+            # Membuat peta mengambil seluruh lebar kolom
+            st_folium(m, use_container_width=True, height=450, returned_objects=[])
 
         # ================= KOLOM KANAN =================
         with col3:
-            st.markdown("<div class='metric-label'>RATA RATA RATING</div>", unsafe_allow_html=True)
+            st.markdown("<div class='metric-label' style='margin-bottom:10px;'>RATA-RATA RATING PER KATEGORI</div>", unsafe_allow_html=True)
             
-            # Hitung rata-rata tiap kategori berdasarkan data unik agen saja
             df_bar = df_map_unik.groupby(kolom_kategori)[kolom_rating].mean().reset_index()
             df_bar = df_bar.sort_values(by=kolom_rating, ascending=True)
             
             fig_bar = px.bar(df_bar, x=kolom_rating, y=kolom_kategori, orientation='h', text=kolom_rating)
-            fig_bar.update_traces(marker_color='#2ca02c', texttemplate='%{text:.1f}', textposition='outside')
+            fig_bar.update_traces(
+                marker_color='#0033a0', 
+                texttemplate='<b>%{text:.1f}</b>', 
+                textposition='outside',
+                cliponaxis=False
+            )
             
-            # Menyesuaikan koma di grafik (Opsional, bawaan Plotly biasa titik)
             fig_bar.update_layout(
                 plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-                margin=dict(l=0, r=30, t=10, b=0), xaxis_title=None, yaxis_title=None, height=180
+                margin=dict(l=0, r=40, t=10, b=0), xaxis_title=None, yaxis_title=None, height=220,
+                xaxis=dict(showgrid=False, showticklabels=False),
+                font=dict(family="Segoe UI", size=13)
             )
             st.plotly_chart(fig_bar, use_container_width=True)
             
-            # -- WORD CLOUD --
-            st.markdown("<div class='metric-label'>SENTIMEN ULASAN PELANGGAN</div>", unsafe_allow_html=True)
+            st.markdown("<div class='metric-label' style='margin-top:20px; margin-bottom:10px;'>SENTIMEN ULASAN PELANGGAN</div>", unsafe_allow_html=True)
             
             if "Teks_Ulasan" in df_filtered.columns:
                 semua_kata = []
@@ -336,15 +303,23 @@ if check_password():
                     
                 if semua_kata:
                     teks_gabungan = " ".join(semua_kata)
-                    wordcloud = WordCloud(width=800, height=400, background_color="white", colormap="tab20").generate(teks_gabungan)
+                    wordcloud = WordCloud(
+                        width=600, height=350, 
+                        background_color="#f4f7f6", # Menyamakan dengan background Streamlit
+                        colormap="Set1", # Palet warna yang lebih bold
+                        max_words=100,
+                        contour_width=0
+                    ).generate(teks_gabungan)
                     
-                    fig_wc, ax = plt.subplots(figsize=(8, 4))
+                    fig_wc, ax = plt.subplots(figsize=(6, 3.5))
                     ax.imshow(wordcloud, interpolation='bilinear')
                     ax.axis("off")
-                    fig_wc.patch.set_facecolor('white')
+                    fig_wc.patch.set_facecolor('#f4f7f6')
                     st.pyplot(fig_wc)
                 else:
-                    st.info("Tidak ada ulasan berbentuk teks yang bisa dianalisis.")
+                    st.info("Tidak ada kata penting yang bisa diekstrak.")
+            else:
+                st.info("Kolom 'Teks_Ulasan' tidak ditemukan di database.")
 
     except Exception as e:
         st.error(f"Gagal memuat data. Periksa penamaan kolom di Spreadsheet. Detail Error: {e}")
