@@ -124,6 +124,12 @@ def ekstrak_kata_penting(teks):
 # ==========================================
 if check_password():
     
+    # Inisialisasi State Interaksi
+    if "selected_kategori" not in st.session_state:
+        st.session_state.selected_kategori = "Semua"
+    if "selected_agent" not in st.session_state:
+        st.session_state.selected_agent = None
+
     # -- HEADER --
     col_logo, col_title, col_filter, col_btn = st.columns([1, 4, 2, 1])
     with col_logo:
@@ -137,7 +143,8 @@ if check_password():
     with col_filter:
         global_filter = st.selectbox("Wilayah", ["Semua", "Bandung Kota", "Kabupaten Bandung", "Cimahi"], label_visibility="collapsed")
     with col_btn:
-        st.button("🔄 REFRESH DATA", use_container_width=True)
+        if st.button("🔄 REFRESH DATA", use_container_width=True):
+            st.session_state.selected_agent = None # Reset pilihan agen saat di-refresh
 
     st.divider()
 
@@ -153,97 +160,132 @@ if check_password():
         kolom_kategori = "Kategori Warehouse" if "Kategori Warehouse" in df.columns else "Kategori"
         kolom_link = "link_maps" if "link_maps" in df.columns else "Link_Maps"
 
-        # Memperbaiki Format Angka
-        df[kolom_rating] = df[kolom_rating].astype(str).str.replace(',', '.').str.strip()
-        df[kolom_rating] = pd.to_numeric(df[kolom_rating], errors="coerce").fillna(0)
-        
+        # Memperbaiki Format Angka & Koordinat
+        df[kolom_rating] = pd.to_numeric(df[kolom_rating].astype(str).str.replace(',', '.').str.strip(), errors="coerce").fillna(0)
         if kolom_total_ulasan in df.columns:
-            df[kolom_total_ulasan] = df[kolom_total_ulasan].astype(str).str.replace(',', '.').str.strip()
-            df[kolom_total_ulasan] = pd.to_numeric(df[kolom_total_ulasan], errors="coerce").fillna(0)
+            df[kolom_total_ulasan] = pd.to_numeric(df[kolom_total_ulasan].astype(str).str.replace(',', '.').str.strip(), errors="coerce").fillna(0)
 
-        # Memperbaiki Format Koordinat Peta
-        df["Latitude"] = df["Latitude"].astype(str).str.replace(',', '.').str.strip()
-        df["Longitude"] = df["Longitude"].astype(str).str.replace(',', '.').str.strip()
-        df["Latitude"] = pd.to_numeric(df["Latitude"], errors="coerce")
-        df["Longitude"] = pd.to_numeric(df["Longitude"], errors="coerce")
+        df["Latitude"] = pd.to_numeric(df["Latitude"].astype(str).str.replace(',', '.').str.strip(), errors="coerce")
+        df["Longitude"] = pd.to_numeric(df["Longitude"].astype(str).str.replace(',', '.').str.strip(), errors="coerce")
 
         if kolom_kategori not in df.columns:
             df[kolom_kategori] = "AGEN" # Fallback
-
-        if "selected_kategori" not in st.session_state:
-            st.session_state.selected_kategori = "Semua"
             
         # -- LAYOUT 3 KOLOM --
         col1, col2, col3 = st.columns([1.2, 1.6, 1.2])
         
+        # FILTER DASAR (Kategori)
+        df_filtered_cat = df[df[kolom_kategori] == st.session_state.selected_kategori] if st.session_state.selected_kategori != "Semua" else df
+        
+        # FILTER FOKUS (Berdasarkan Klik Tabel / Peta)
+        if st.session_state.selected_agent:
+            df_focus = df_filtered_cat[df_filtered_cat["Nama_Agen"] == st.session_state.selected_agent]
+        else:
+            df_focus = df_filtered_cat
+
         # ================= KOLOM KIRI =================
         with col1:
             st.markdown("<div class='metric-label' style='margin-bottom:10px;'>KATEGORI WAREHOUSE</div>", unsafe_allow_html=True)
             kategori_options = ["Semua"] + list(df[kolom_kategori].dropna().unique())
-            selected_kat = st.radio("", kategori_options, horizontal=True, label_visibility="collapsed")
-            st.session_state.selected_kategori = selected_kat
+            selected_kat = st.radio("", kategori_options, horizontal=True, label_visibility="collapsed", index=kategori_options.index(st.session_state.selected_kategori))
             
-            df_filtered = df[df[kolom_kategori] == st.session_state.selected_kategori] if st.session_state.selected_kategori != "Semua" else df
-                
+            # Jika ganti kategori, reset agen yg dipilih
+            if selected_kat != st.session_state.selected_kategori:
+                st.session_state.selected_kategori = selected_kat
+                st.session_state.selected_agent = None
+                st.rerun()
+
+            # Data untuk Tabel (Selalu tampilkan semua dalam kategori agar bisa dipilih)
             if kolom_total_ulasan in df.columns:
-                df_tabel = df_filtered.groupby("Nama_Agen").agg({
-                    kolom_rating: "max", 
-                    kolom_total_ulasan: "max"
-                }).reset_index()
+                df_tabel = df_filtered_cat.groupby("Nama_Agen").agg({kolom_rating: "max", kolom_total_ulasan: "max"}).reset_index()
             else:
-                df_tabel = df_filtered.groupby("Nama_Agen").agg({kolom_rating: "max"}).reset_index()
+                df_tabel = df_filtered_cat.groupby("Nama_Agen").agg({kolom_rating: "max"}).reset_index()
             
-            df_tabel = df_tabel.sort_values(by=kolom_rating, ascending=False) # Lebih baik dari rating tertinggi
+            df_tabel = df_tabel.sort_values(by=kolom_rating, ascending=False)
             df_tabel_display = df_tabel.copy()
             df_tabel_display[kolom_rating] = df_tabel_display[kolom_rating].apply(lambda x: f"{x:.1f}".replace(".", ","))
             if kolom_total_ulasan in df_tabel_display.columns:
                 df_tabel_display[kolom_total_ulasan] = df_tabel_display[kolom_total_ulasan].apply(lambda x: f"{x:,.0f}".replace(",", "."))
             
-            rata_rating = df_tabel[kolom_rating].mean()
+            # Highlight metrik
+            rata_rating = df_focus[kolom_rating].mean() if not df_focus.empty else 0
             rating_text = f"{rata_rating:.1f}".replace(".", ",")
             
             st.markdown(f"""
                 <div class='metric-card'>
-                    <div class='metric-label'>Rata-rata Rating</div>
+                    <div class='metric-label'>Rata-rata Rating {"(Spesifik Agen)" if st.session_state.selected_agent else ""}</div>
                     <div class='big-metric'><span style='color:#FFD700;'>⭐</span> {rating_text}</div>
                 </div>
             """, unsafe_allow_html=True)
             
-            st.dataframe(df_tabel_display, hide_index=True, use_container_width=True, height=450)
+            # Tombol Reset Pilihan
+            if st.session_state.selected_agent:
+                if st.button("❌ Hapus Pilihan Agen & Tampilkan Semua", use_container_width=True):
+                    st.session_state.selected_agent = None
+                    st.rerun()
+
+            st.markdown("<small><i>Klik baris pada tabel untuk filter detail agen.</i></small>", unsafe_allow_html=True)
+            
+            # TABEL INTERAKTIF (Membutuhkan Streamlit >= 1.35)
+            selection_event = st.dataframe(
+                df_tabel_display, 
+                hide_index=True, 
+                use_container_width=True, 
+                height=400,
+                on_select="rerun", # Ini kunci interaktivitas tabel
+                selection_mode="single-row"
+            )
+            
+            # Tangkap klik tabel
+            if selection_event.selection.rows:
+                selected_idx = selection_event.selection.rows[0]
+                clicked_agent = df_tabel_display.iloc[selected_idx]["Nama_Agen"]
+                if clicked_agent != st.session_state.selected_agent:
+                    st.session_state.selected_agent = clicked_agent
+                    st.rerun()
 
         # ================= KOLOM TENGAH =================
         with col2:
             if kolom_total_ulasan in df.columns:
-                total_ulasan = df_tabel[kolom_total_ulasan].sum()
+                total_ulasan = df_focus.drop_duplicates(subset=["Nama_Agen"])[kolom_total_ulasan].sum()
             else:
-                total_ulasan = len(df_filtered)
+                total_ulasan = len(df_focus)
             
             ulasan_text = f"{total_ulasan:,.0f}".replace(",", ".")
             
             st.markdown(f"""
                 <div class='metric-card' style='border-top: 4px solid #ed1c24;'>
-                    <div class='metric-label'>Total Ulasan Pelanggan</div>
+                    <div class='metric-label'>Total Ulasan Pelanggan {"(Spesifik Agen)" if st.session_state.selected_agent else ""}</div>
                     <div class='big-metric'>🗣️ {ulasan_text}</div>
                 </div>
             """, unsafe_allow_html=True)
             
             st.markdown("<div class='metric-label' style='margin-bottom:10px;'>PETA LOKASI AGEN</div>", unsafe_allow_html=True)
             
-            # -- PETA MAPS INTERAKTIF YG SUDAH DIPERBAIKI --
-            # Menggunakan tema CartoDB positron agar terlihat modern & bersih
-            m = folium.Map(location=[-6.917464, 107.619123], zoom_start=12, tiles="CartoDB positron")
-            df_map_unik = df_filtered.drop_duplicates(subset=["Nama_Agen"]).copy()
+            # -- LOGIKA AUTO ZOOM PETA --
+            if st.session_state.selected_agent and not df_focus.empty:
+                # Fokus ke satu agen
+                center_lat = df_focus["Latitude"].mean()
+                center_lon = df_focus["Longitude"].mean()
+                zoom_level = 16 # Zoom dekat
+            else:
+                # Default Bandung area
+                center_lat = -6.917464
+                center_lon = 107.619123
+                zoom_level = 12
+                
+            m = folium.Map(location=[center_lat, center_lon], zoom_start=zoom_level, tiles="CartoDB positron")
+            df_map_unik = df_focus.drop_duplicates(subset=["Nama_Agen"]).copy()
             
             for idx, row in df_map_unik.iterrows():
                 if pd.notna(row["Latitude"]) and pd.notna(row["Longitude"]):
                     
-                    # Logika fallback URL Google Maps yang akurat
                     if kolom_link in df.columns and pd.notna(row[kolom_link]) and str(row[kolom_link]).strip():
                         url_maps = str(row[kolom_link])
                     else:
                         url_maps = f"https://www.google.com/maps/search/?api=1&query={row['Latitude']},{row['Longitude']}"
                     
-                    # HTML Card Interaktif untuk di dalam Popup Peta
+                    # HTML Card Interaktif
                     popup_html = f"""
                     <div style="font-family: 'Segoe UI', sans-serif; min-width: 220px; padding: 5px; text-align: center;">
                         <h4 style="color: #0033a0; margin: 0 0 10px 0; font-size:16px;">{row['Nama_Agen']}</h4>
@@ -258,24 +300,32 @@ if check_password():
                     
                     folium.CircleMarker(
                         location=[row["Latitude"], row["Longitude"]],
-                        radius=8,
-                        color="white", # Outline putih
+                        radius=8 if not st.session_state.selected_agent else 12, # Besarkan marker jika di-klik
+                        color="white", 
                         weight=2,
                         fill=True, 
-                        fill_color="#0033a0", # Biru JNE
+                        fill_color="#0033a0" if not st.session_state.selected_agent else "#ed1c24", # Merah jika sedang fokus
                         fill_opacity=1.0,
                         popup=folium.Popup(popup_html, max_width=300),
-                        tooltip=f"Klik untuk detail: {row['Nama_Agen']}"
+                        tooltip=row['Nama_Agen'] # Penting: Ini ditangkap oleh last_object_clicked_tooltip
                     ).add_to(m)
             
-            # Membuat peta mengambil seluruh lebar kolom
-            st_folium(m, use_container_width=True, height=450, returned_objects=[])
+            # Render peta & tangkap klik peta
+            map_data = st_folium(m, use_container_width=True, height=400)
+            
+            if map_data and map_data.get("last_object_clicked_tooltip"):
+                clicked_map_agent = map_data["last_object_clicked_tooltip"]
+                if clicked_map_agent != st.session_state.selected_agent:
+                    st.session_state.selected_agent = clicked_map_agent
+                    st.rerun()
 
         # ================= KOLOM KANAN =================
         with col3:
             st.markdown("<div class='metric-label' style='margin-bottom:10px;'>RATA-RATA RATING PER KATEGORI</div>", unsafe_allow_html=True)
             
-            df_bar = df_map_unik.groupby(kolom_kategori)[kolom_rating].mean().reset_index()
+            # Bar chart lebih relevan tidak difilter hingga 1 agen, agar perbandingannya terlihat
+            df_bar_unik = df_filtered_cat.drop_duplicates(subset=["Nama_Agen"]).copy()
+            df_bar = df_bar_unik.groupby(kolom_kategori)[kolom_rating].mean().reset_index()
             df_bar = df_bar.sort_values(by=kolom_rating, ascending=True)
             
             fig_bar = px.bar(df_bar, x=kolom_rating, y=kolom_kategori, orientation='h', text=kolom_rating)
@@ -294,19 +344,19 @@ if check_password():
             )
             st.plotly_chart(fig_bar, use_container_width=True)
             
-            st.markdown("<div class='metric-label' style='margin-top:20px; margin-bottom:10px;'>SENTIMEN ULASAN PELANGGAN</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='metric-label' style='margin-top:20px; margin-bottom:10px;'>SENTIMEN ULASAN {'AGEN INI' if st.session_state.selected_agent else 'PELANGGAN'}</div>", unsafe_allow_html=True)
             
-            if "Teks_Ulasan" in df_filtered.columns:
+            if "Teks_Ulasan" in df.columns:
                 semua_kata = []
-                for ulasan in df_filtered["Teks_Ulasan"]:
+                for ulasan in df_focus["Teks_Ulasan"].dropna():
                     semua_kata.extend(ekstrak_kata_penting(ulasan))
                     
                 if semua_kata:
                     teks_gabungan = " ".join(semua_kata)
                     wordcloud = WordCloud(
                         width=600, height=350, 
-                        background_color="#f4f7f6", # Menyamakan dengan background Streamlit
-                        colormap="Set1", # Palet warna yang lebih bold
+                        background_color="#f4f7f6",
+                        colormap="Set1", 
                         max_words=100,
                         contour_width=0
                     ).generate(teks_gabungan)
@@ -317,7 +367,7 @@ if check_password():
                     fig_wc.patch.set_facecolor('#f4f7f6')
                     st.pyplot(fig_wc)
                 else:
-                    st.info("Tidak ada kata penting yang bisa diekstrak.")
+                    st.info("Tidak ada kata sentimen yang terekam untuk pilihan ini.")
             else:
                 st.info("Kolom 'Teks_Ulasan' tidak ditemukan di database.")
 
