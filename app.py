@@ -97,6 +97,50 @@ def check_password():
 # ==========================================
 # 4. FUNGSI BANTUAN (ANALISIS TEKS)
 # ==========================================
+st.markdown("""
+<style>
+    /* Latar belakang abu-abu terang ala Power BI */
+    .stApp {
+        background-color: #f0f2f6;
+    }
+    
+    /* Efek Card putih dengan shadow untuk setiap visual */
+    .css-1r6slb0, .css-12oz5g7 {
+        background-color: white;
+        border-radius: 10px;
+        padding: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 15px;
+    }
+    
+    /* Header Container */
+    .header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: white;
+        padding: 10px 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    /* Metrik besar */
+    .big-metric {
+        font-size: 48px;
+        font-weight: bold;
+        text-align: center;
+        color: #333;
+    }
+    .metric-label {
+        font-size: 18px;
+        text-align: center;
+        font-weight: bold;
+        color: #555;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 KATA_ABAIKAN = {"yang", "di", "ke", "dari", "pada", "dalam", "untuk", "dengan", "dan", 
                 "atau", "ini", "itu", "juga", "sudah", "saya", "kami", "paket", "jne", 
                 "kurir", "barang", "kiriman", "nya", "ada", "tidak", "bisa", "belum", 
