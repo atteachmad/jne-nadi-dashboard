@@ -19,16 +19,20 @@ st.set_page_config(page_title="NADI - JNE Agent Monitoring", page_icon="📦", l
 # ==========================================
 def check_password():
     """Mengembalikan True jika password benar."""
-            def password_entered():
-    # Cek apakah username ada dan password cocok
-    if (st.session_state["username"] in st.secrets["credentials"] and
-        st.session_state["password"] == st.secrets["credentials"][st.session_state["username"]]["password"]):
-        # JIKA BENAR: (Semua baris ini harus masuk ke dalam/di-Tab)
-        st.session_state["role"] = st.secrets["credentials"][st.session_state["username"]]["role"]
-        st.session_state["password_correct"] = True   
-    else:
-        # JIKA SALAH: (Sejajar dengan 'if')
-        st.session_state["password_correct"] = False
+    
+    def password_entered():
+        # Cek apakah username ada dan password cocok
+        if (st.session_state["username"] in st.secrets["credentials"] and
+            st.session_state["password"] == st.secrets["credentials"][st.session_state["username"]]["password"]):
+            
+            # JIKA BENAR:
+            st.session_state["role"] = st.secrets["credentials"][st.session_state["username"]]["role"]
+            st.session_state["password_correct"] = True
+            
+        else:
+            # JIKA SALAH:
+            st.session_state["password_correct"] = False
+
     if "password_correct" not in st.session_state:
         st.markdown("<h1 style='text-align: center; color: #0033a0;'>📦 NADI Login Portal</h1>", unsafe_allow_html=True)
         st.markdown("<p style='text-align: center; color: #555;'>JNE Agent Rating & Sentiment Analysis</p>", unsafe_allow_html=True)
