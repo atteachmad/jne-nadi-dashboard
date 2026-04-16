@@ -20,8 +20,11 @@ st.set_page_config(page_title="NADI - JNE Agent Monitoring", page_icon="📦", l
 def check_password():
     """Mengembalikan True jika password benar."""
     def password_entered():
-        if (st.session_state["username"] == st.secrets["credentials"]["username"] and 
-            st.session_state["password"] == st.secrets["credentials"]["password"]):
+        if (st.session_state["username"] in st.secrets["credentials"] and
+    st.session_state["password"] == st.secrets["credentials"][st.session_state["username"]]["password"]):
+    
+    # (Opsional) Menyimpan role ke session state agar bisa digunakan untuk membatasi tampilan
+    st.session_state["role"] = st.secrets["credentials"][st.session_state["username"]]["role"]
             st.session_state["password_correct"] = True
             del st.session_state["password"]
             del st.session_state["username"]
