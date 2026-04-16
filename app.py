@@ -141,7 +141,7 @@ if check_password():
         if os.path.exists("logo_jne.png"):
             st.image("logo_jne.png", width=120)
         else:
-            st.markdown("<h2 style='color:#0033a0; margin:0; padding-top:5px; font-weight:900;'>JNE</h2>", unsafe_allow_html=True)
+            st.markdown("<h2 style='color:#0033a0; margin:0; font-weight:900;'>JNE</h2>", unsafe_allow_html=True)
 
     with col_title:
         st.markdown("<h3 style='margin:0; padding-top:5px; color:#333;'>Dashboard Analisis Kualitas & Sentimen</h3>", unsafe_allow_html=True)
