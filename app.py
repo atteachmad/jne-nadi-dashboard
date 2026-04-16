@@ -34,7 +34,7 @@ def check_password():
             st.session_state["password_correct"] = False
 
     if "password_correct" not in st.session_state:
-        st.markdown("<h1 style='text-align: center; color: #0033a0;'>🚕 NADI Login Portal</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align: center; color: #0033a0;'>📦 NADI Login Portal</h1>", unsafe_allow_html=True)
         st.markdown("<p style='text-align: center; color: #555;'>JNE Agent Rating & Sentiment Analysis</p>", unsafe_allow_html=True)
         
         col1, col2, col3 = st.columns([1, 2, 1])
